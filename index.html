@@ -1,61 +1,605 @@
 <!DOCTYPE html>
-    <button onclick="saveData()">保存</button>
-    <button onclick="loadData()">読み込み</button>
-    <button onclick="window.print()">印刷</button>
-    <button onclick="clearData()">リセット</button>
-  </div>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マンダラチャート・プランナー | 目標達成・目標設定ツール</title>
+    <!-- アドセンス用のメタタグ（必要に応じて後からここに挿入できます） -->
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f9fafb;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #4b5563;
+            --border-color: #d1d5db;
+            --center-bg: #e0e7ff;
+            --center-border: #6366f1;
+        }
 
-  <div class="grid" id="grid"></div>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
 
-  <div class="footer">
-    <a href="about.html">このサイトについて</a>
-    |
-    <a href="privacy.html">プライバシーポリシー</a>
-    |
-    <a href="contact.html">お問い合わせ</a>
-    |
-    <a href="blog.html">コラム</a>
-  </div>
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding-bottom: 60px;
+        }
 
-  <script>
-    const grid = document.getElementById('grid');
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-    for (let i = 0; i < 81; i++) {
-      const textarea = document.createElement('textarea');
-      textarea.className = 'cell';
+        .logo {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
 
-      if (i === 40) {
-        textarea.classList.add('center');
-        textarea.placeholder = '中心目標';
-      }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
 
-      textarea.value = localStorage.getItem('mandala-' + i) || '';
+        nav a:hover {
+            color: var(--primary-color);
+        }
 
-      textarea.addEventListener('input', () => {
-        localStorage.setItem('mandala-' + i, textarea.value);
-      });
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
 
-      grid.appendChild(textarea);
-    }
+        .section {
+            display: none;
+        }
 
-    function saveData() {
-      alert('保存しました');
-    }
+        .section.active {
+            display: block;
+        }
 
-    function loadData() {
-      location.reload();
-    }
+        .hero {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
 
-    function clearData() {
-      if (!confirm('本当に削除しますか？')) return;
+        .hero h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
 
-      for (let i = 0; i < 81; i++) {
-        localStorage.removeItem('mandala-' + i);
-      }
+        .hero p {
+            color: var(--text-muted);
+        }
 
-      location.reload();
-    }
-  </script>
+        /* マンダラチャートのグリッドシステム */
+        .mandala-wrapper {
+            overflow-x: auto;
+            padding: 1rem 0;
+            display: flex;
+            justify-content: center;
+        }
 
+        .mandala-outer-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 810px;
+            min-width: 810px;
+        }
+
+        .mandala-inner-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            background-color: var(--border-color);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        /* 中心（大目標）のブロックを目立たせる */
+        .mandala-outer-grid > .mandala-inner-grid:nth-child(5) {
+            background-color: var(--center-border);
+        }
+
+        .mandala-cell {
+            background-color: var(--card-bg);
+            border-radius: 4px;
+            height: 85px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mandala-cell textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            resize: none;
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--text-main);
+            background: transparent;
+        }
+
+        .mandala-cell textarea:focus {
+            outline: none;
+        }
+
+        /* 各グリッドの中心セル */
+        .mandala-inner-grid > .mandala-cell:nth-child(5) {
+            background-color: #f3f4f6;
+            font-weight: bold;
+        }
+
+        /* 真ん中のグリッドのセルたち */
+        .mandala-outer-grid > .mandala-inner-grid:nth-child(5) > .mandala-cell {
+            background-color: #eef2ff;
+        }
+        .mandala-outer-grid > .mandala-inner-grid:nth-child(5) > .mandala-cell:nth-child(5) {
+            background-color: var(--center-bg);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+        }
+        .btn-secondary:hover {
+            background-color: #555c66;
+        }
+
+        /* コラム・記事スタイル */
+        .article-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+        .article-card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+        .article-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .article-content h2 {
+            margin: 1.5rem 0 0.5rem 0;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 0.5rem;
+        }
+        .article-content p {
+            margin-bottom: 1rem;
+        }
+
+        /* フォームプレースホルダー */
+        .form-box {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        footer {
+            background-color: #1f2937;
+            color: #9ca3af;
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.85rem;
+            margin-top: 4rem;
+        }
+
+        footer a {
+            color: #d1d5db;
+            text-decoration: none;
+            margin: 0 0.5rem;
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        @media print {
+            header, footer, .controls, nav, .hero, .no-print {
+                display: none !important;
+            }
+            body {
+                background: white;
+                padding: 0;
+            }
+            .mandala-outer-grid {
+                width: 100%;
+                min-width: 100%;
+            }
+            .mandala-cell {
+                height: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a class="logo" onclick="showSection('tool')">マンダラチャート・プランナー</a>
+        <nav>
+            <a onclick="showSection('tool')">ツール</a>
+            <a onclick="showSection('blog')">コラム</a>
+            <a onclick="showSection('about')">運営者情報</a>
+            <a onclick="showSection('contact')">お問い合わせ</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- ツールセクション -->
+        <div id="tool-section" class="section active">
+            <div class="hero">
+                <h1>マンダラチャート・オンライン</h1>
+                <p>9×9の合計81マスで、思考を整理し目標を達成するための無料ツールです。文字を入力すると自動保存されます。</p>
+            </div>
+
+            <div class="mandala-wrapper">
+                <div class="mandala-outer-grid">
+                    <!-- グリッド1 (左上) -->
+                    <div class="mandala-inner-grid" id="grid-1">
+                        <div class="mandala-cell"><textarea id="c-1-1" placeholder="要素1-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-1-2" placeholder="要素1-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-1-3" placeholder="要素1-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-1-4" placeholder="要素1-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-1" readonly placeholder="基礎思考1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-1-6" placeholder="要素1-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-1-7" placeholder="要素1-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-1-8" placeholder="要素1-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-1-9" placeholder="要素1-9"></textarea></div>
+                    </div>
+                    <!-- グリッド2 (上) -->
+                    <div class="mandala-inner-grid" id="grid-2">
+                        <div class="mandala-cell"><textarea id="c-2-1" placeholder="要素2-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-2-2" placeholder="要素2-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-2-3" placeholder="要素2-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-2-4" placeholder="要素2-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-2" readonly placeholder="基礎思考2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-2-6" placeholder="要素2-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-2-7" placeholder="要素2-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-2-8" placeholder="要素2-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-2-9" placeholder="要素2-9"></textarea></div>
+                    </div>
+                    <!-- グリッド3 (右上) -->
+                    <div class="mandala-inner-grid" id="grid-3">
+                        <div class="mandala-cell"><textarea id="c-3-1" placeholder="要素3-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-3-2" placeholder="要素3-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-3-3" placeholder="要素3-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-3-4" placeholder="要素3-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-3" readonly placeholder="基礎思考3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-3-6" placeholder="要素3-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-3-7" placeholder="要素3-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-3-8" placeholder="要素3-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-3-9" placeholder="要素3-9"></textarea></div>
+                    </div>
+                    <!-- グリッド4 (左) -->
+                    <div class="mandala-inner-grid" id="grid-4">
+                        <div class="mandala-cell"><textarea id="c-4-1" placeholder="要素4-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-4-2" placeholder="要素4-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-4-3" placeholder="要素4-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-4-4" placeholder="要素4-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-4" readonly placeholder="基礎思考4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-4-6" placeholder="要素4-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-4-7" placeholder="要素4-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-4-8" placeholder="要素4-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-4-9" placeholder="要素4-9"></textarea></div>
+                    </div>
+                    <!-- グリッド5 (中央・大目標) -->
+                    <div class="mandala-inner-grid" id="grid-center">
+                        <div class="mandala-cell"><textarea id="m-1" placeholder="基礎思考1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="m-2" placeholder="基礎思考2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="m-3" placeholder="基礎思考3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="m-4" placeholder="基礎思考4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="main-target" placeholder="★中心大目標★"></textarea></div>
+                        <div class="mandala-cell"><textarea id="m-6" placeholder="基礎思考5"></textarea></div>
+                        <div class="mandala-cell"><textarea id="m-7" placeholder="基礎思考6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="m-8" placeholder="基礎思考7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="m-9" placeholder="基礎思考8"></textarea></div>
+                    </div>
+                    <!-- グリッド6 (右) -->
+                    <div class="mandala-inner-grid" id="grid-6">
+                        <div class="mandala-cell"><textarea id="c-6-1" placeholder="要素5-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-6-2" placeholder="要素5-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-6-3" placeholder="要素5-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-6-4" placeholder="要素5-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-5" readonly placeholder="基礎思考5"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-6-6" placeholder="要素5-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-6-7" placeholder="要素5-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-6-8" placeholder="要素5-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-6-9" placeholder="要素5-9"></textarea></div>
+                    </div>
+                    <!-- グリッド7 (左下) -->
+                    <div class="mandala-inner-grid" id="grid-7">
+                        <div class="mandala-cell"><textarea id="c-7-1" placeholder="要素6-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-7-2" placeholder="要素6-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-7-3" placeholder="要素6-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-7-4" placeholder="要素6-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-6" readonly placeholder="基礎思考6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-7-6" placeholder="要素6-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-7-7" placeholder="要素6-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-7-8" placeholder="要素6-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-7-9" placeholder="要素6-9"></textarea></div>
+                    </div>
+                    <!-- グリッド8 (下) -->
+                    <div class="mandala-inner-grid" id="grid-8">
+                        <div class="mandala-cell"><textarea id="c-8-1" placeholder="要素7-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-8-2" placeholder="要素7-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-8-3" placeholder="要素7-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-8-4" placeholder="要素7-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-7" readonly placeholder="基礎思考7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-8-6" placeholder="要素7-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-8-7" placeholder="要素7-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-8-8" placeholder="要素7-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-8-9" placeholder="要素7-9"></textarea></div>
+                    </div>
+                    <!-- グリッド9 (右下) -->
+                    <div class="mandala-inner-grid" id="grid-9">
+                        <div class="mandala-cell"><textarea id="c-9-1" placeholder="要素8-1"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-9-2" placeholder="要素8-2"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-9-3" placeholder="要素8-3"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-9-4" placeholder="要素8-4"></textarea></div>
+                        <div class="mandala-cell"><textarea id="sub-target-8" readonly placeholder="基礎思考8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-9-6" placeholder="要素8-6"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-9-7" placeholder="要素8-7"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-9-8" placeholder="要素8-8"></textarea></div>
+                        <div class="mandala-cell"><textarea id="c-9-9" placeholder="要素8-9"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="window.print()">印刷・PDF保存する</button>
+                <button class="btn btn-secondary" onclick="clearAll()">すべてリセット</button>
+            </div>
+        </div>
+
+        <!-- コラムセクション -->
+        <div id="blog-section" class="section">
+            <div class="hero">
+                <h1>目標達成コラム</h1>
+                <p>マンダラチャートを効果的に活用し、人生を豊かにするためのヒント集です。</p>
+            </div>
+
+            <div id="blog-list">
+                <!-- 記事1 -->
+                <div class="article-card">
+                    <h2>1. マンダラチャートとは？大谷翔平選手も実践した目標達成術の基本</h2>
+                    <p>マンダラチャートは、9×9の合計81マスを使って、中心に掲げた大きな目標を細分化していく思考整理ツールです。仏教の「曼荼羅（マンダラ）」に由来し、網羅的に物事を整理できるのが特徴です。中心に最重要目標を設定し、周囲の8マスにそれを達成するための要素を書き出すことで、今何をすべきかが一目で明確になります。</p>
+                    <button class="btn" onclick="showArticle(1)">続きを読む</button>
+                </div>
+                <!-- 記事2 -->
+                <div class="article-card">
+                    <h2>2. 初心者向け！マンダラチャートの正しい書き方と3つのコツ</h2>
+                    <p>初めてマンダラチャートを作る際、マスを埋めるのが難しく感じることがあります。コツは3つあります。1つ目は、中心の目標を「具体的かつワクワクするもの」にすること。22つ目は、周囲の要素に「心技体」や「行動・環境」など異なる視点を取り入れること。3つ目は、最初から完璧を目指さず、まずは思いつく言葉を埋めてみることです。</p>
+                    <button class="btn" onclick="showArticle(2)">続きを読む</button>
+                </div>
+                <!-- 記事3 -->
+                <div class="article-card">
+                    <h2>3. 挫折を防ぐ！マンダラチャートのマス目をスムーズに埋める思考法</h2>
+                    <p>81マスと聞くと非常に多く感じられますが、これを脳の「空白を埋めたくなる性質」を利用したトレーニングだと捉えましょう。どうしてもマスが埋まらないときは、「やらないことリスト」を裏返しにして行動に変換したり、他人の成功事例を参考にしたりして、アイデアを広げていくのがおすすめです。</p>
+                    <button class="btn" onclick="showArticle(3)">続きを読む</button>
+                </div>
+                <!-- 記事4 -->
+                <div class="article-card">
+                    <h2>4. ビジネスにも使える！マンダラチャートを活用した課題解決とアイデア発想</h2>
+                    <p>マンダラチャートは個人の目標達成だけでなく、ビジネスの場における課題解決や新規事業のアイデア出しにも絶大な効果を発揮します。中心に「売上〇%アップ」や「新商品企画」といったテーマを据えることで、チーム全体の思考を視覚的に同期させ、具体的なアクションプランへ落とし込むことができます。</p>
+                    <button class="btn" onclick="showArticle(4)">続きを読む</button>
+                </div>
+                <!-- 記事5 -->
+                <div class="article-card">
+                    <h2>5. 人生設計に役立つ！「マンダラライフデザイン」でバランスの良い人生を手に入れる</h2>
+                    <p>仕事だけの目標、あるいは趣味だけの目標に偏ってしまうと、人生全体のバランスが崩れてしまうことがあります。マンダラチャートの周囲の8マスに「仕事」「健康」「お金」「趣味」「家族」「知性」「美容・ファッション」「社会貢献」といった人生の主要な8ジャンルを割り振ることで、豊かでバランスの取れた人生設計が可能になります。</p>
+                    <button class="btn" onclick="showArticle(5)">続きを読む</button>
+                </div>
+            </div>
+
+            <!-- 個別記事表示エリア -->
+            <div id="article-view" style="display: none;">
+                <button class="btn btn-secondary style=margin-bottom:1rem;" onclick="hideArticle()">← コラム一覧へ戻る</button>
+                <div id="article-content-area" class="article-content"></div>
+            </div>
+        </div>
+
+        <!-- 運営者情報 -->
+        <div id="about-section" class="section">
+            <div class="hero">
+                <h1>このサイトについて</h1>
+            </div>
+            <div class="article-content">
+                <h2>運営目的</h2>
+                <p>当サイトは、利用者の皆様が日々の目標設定や思考整理を効率的に行い、理想のライフデザインを実現するためのサポートツールとして開発されました。</p>
+                <h2>免責事項</h2>
+                <p>当サイトの利用により生じたあらゆるトラブルや損失・損害に対して、当方は一切の責任を負いかねます。入力されたデータはすべてブラウザのローカルストレージ（内部）に保存され、サーバー等に送信されることはありません。</p>
+            </div>
+        </div>
+
+        <!-- お問い合わせ -->
+        <div id="contact-section" class="section">
+            <div class="hero">
+                <h1>お問い合わせ</h1>
+                <p>ご意見・ご要望や不具合の報告は、以下の項目をご記入の上送信してください。</p>
+            </div>
+            <div class="form-box">
+                <p style="margin-bottom: 1rem; color: var(--text-muted);">
+                    ※アドセンス審査用のサンプルお問い合わせページです。実運用の際はGoogleフォーム等への差し替えを推奨します。
+                </p>
+                <div style="text-align: left; max-width: 400px; margin: 0 auto;">
+                    <label style="display:block; margin-top:1rem;">お名前</label>
+                    <input type="text" style="width:100%; padding:0.5rem; border:1px solid var(--border-color); border-radius:4px;">
+                    <label style="display:block; margin-top:1rem;">メールアドレス</label>
+                    <input type="email" style="width:100%; padding:0.5rem; border:1px solid var(--border-color); border-radius:4px;">
+                    <label style="display:block; margin-top:1rem;">内容</label>
+                    <textarea style="width:100%; height:100px; padding:0.5rem; border:1px solid var(--border-color); border-radius:4px;"></textarea>
+                    <button class="btn" style="width:100%; margin-top:1rem;" onclick="alert('お問い合わせを送信しました（サンプル）')">送信する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 マンダラチャート・プランナー. All rights reserved.</p>
+        <p style="margin-top: 0.5rem;">
+            <a onclick="showSection('tool')">ツール</a> | 
+            <a onclick="showSection('blog')">コラム</a> | 
+            <a onclick="showSection('about')">運営者情報</a> | 
+            <a onclick="showSection('contact')">お問い合わせ</a>
+        </p>
+    </footer>
+
+    <script>
+        // セクション切り替え機能
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(sectionId + '-section').classList.add('active');
+            window.scrollTo(0, 0);
+            if(sectionId !== 'blog') {
+                hideArticle();
+            }
+        }
+
+        // コラム記事のデータ
+        const articles = {
+            1: {
+                title: "マンダラチャートとは？大谷翔平選手も実践した目標達成術の基本",
+                body: "<h2>マンダラチャートの概要</h2><p>マンダラチャートとは、強力な思考整理・目標設定のフレームワークです。元々はクローバ経営研究所の松村寧雄氏によって1987年に開発されました。最大の特徴は、人間の脳の「すべてのマス目を埋めたくなる」という性質を利用し、潜在的なアイデアや必要なアクションを強制的に引き出せる点にあります。</p><h2>なぜ今、マンダラチャートなのか</h2><p>現代社会は情報に溢れ、自分の目標を見失いがちです。マンダラチャートを使うことで、頭の中で散らかっている計画が1枚のシートにビジュアル化され、今すぐやるべき『今日の一歩』が非常にクリアになります。</p>"
+            },
+            2: {
+                title: "初心者向け！マンダラチャートの正しい書き方と3つのコツ",
+                body: "<h2>ステップ1：中心に大目標を据える</h2><p>まずはチャートの中心（9×9のど真ん中）に、自分が最も達成したい大きなテーマを書き込みます。例えば『1年後に副収入月10万』や『フルマラソン完走』などです。</p><h2>ステップ2：周囲の8マスに要素を展開</h2><p>中心を囲む8つのマスに、その大目標を達成するために必要な『要素』をジャンル別に書き出します。ここが自動的に周囲の各マスの中心に連動する仕組みになっています。</p><h2>重要な3つのコツ</h2><p>1. 抽象的な言葉ではなく、行動に移せる具体的な言葉を使う。<br>2. 完璧を求めず、まずは思いつきでスピード重視で埋める。<br>3. 毎日目に入る場所に置いて、意識に刷り込む。</p>"
+            },
+            3: {
+                title: "挫折を防ぐ！マンダラチャートのマス目をスムーズに埋める思考法",
+                body: "<h2>なぜマスが埋まらないのか？</h2><p>多くの人が『正しいことを書かなければいけない』というブレーキを自分でかけてしまっています。81マスをすべて完璧な正解で埋める必要はありません。</p><h2>空白を埋めるアイデア発想法</h2><p>・現状の不満や課題の『逆』を書き出してみる。<br>・本やネットで見つけた『良いな』と思った他人のアクションを取り入れる。<br>・『1回だけやってみる』ようなハードルの低い行動を書き込む。</p>"
+            },
+            4: {
+                title: "ビジネスにも使える！マンダラチャートを活用した課題解決とアイデア発想",
+                body: "<h2>ビジネスにおける活用シーン</h2><p>マンダラチャートは、個人の目標だけでなく、企業のプロダクト開発、売上改善、さらにはチームのコミュニケーション活性化にも応用可能です。中心に『顧客満足度の向上』や『新規事業アイデア』を配置し、周囲を埋めていきます。</p><h2>メリット：思考の偏りを防ぐ</h2><p>1人で考えていると特定のアイデアに固執しがちですが、9つのジャンルに強制的に分けることで、マーケティング、コスト、人事、技術など、多角的な視点を同時に持つことができます。</p>"
+            },
+            5: {
+                title: "人生設計に役立つ！「マンダラライフデザイン」でバランスの良い人生を手に入れる",
+                body: "<h2>バランスの取れた人生が幸福度を高める</h2><p>どれだけお金を稼いでも、健康を壊してしまっては意味がありません。逆に、健康でも人間関係がボロボロでは寂しいものです。人生設計において最も重要なのは『バランス』です。</p><h2>おすすめの8つのジャンル設定</h2><p>中心の周りの8マスに以下の項目を設定してみましょう。<br>1. 仕事（キャリア・ビジネス）<br>2. お金（資産形成・収入）<br>3. 健康（食事・睡眠・運動）<br>4. 家族・人間関係<br>5. 趣味・教養<br>6. ライフスタイル（住居・環境）<br>7. 心（メンタル・リフレッシュ）<br>8. 社会貢献・他者貢献</p>"
+            }
+        };
+
+        function showArticle(id) {
+            const art = articles[id];
+            const area = document.getElementById('article-content-area');
+            area.innerHTML = `<h1>${art.title}</h1><hr style="margin:1rem 0; border:none; border-top:1px solid var(--border-color);">${art.body}`;
+            document.getElementById('blog-list').style.display = 'none';
+            document.getElementById('article-view').style.display = 'block';
+        }
+
+        function hideArticle() {
+            document.getElementById('blog-list').style.display = 'block';
+            document.getElementById('article-view').style.display = 'none';
+        }
+
+        // マンダラチャートの連動システムと自動保存
+        const centerInputs = ['m-1', 'm-2', 'm-3', 'm-4', 'm-6', 'm-7', 'm-8', 'm-9'];
+        const subTargets = ['sub-target-1', 'sub-target-2', 'sub-target-3', 'sub-target-4', 'sub-target-5', 'sub-target-6', 'sub-target-7', 'sub-target-8'];
+
+        // 入力時の連動と保存イベントを設定
+        document.querySelectorAll('textarea').forEach(textarea => {
+            textarea.addEventListener('input', (e) => {
+                const id = e.target.id;
+                
+                // 真ん中のグリッドに入力されたら、周囲の対応するグリッドの中心にコピー
+                if (centerInputs.includes(id)) {
+                    const index = centerInputs.indexOf(id);
+                    const subTargetId = subTargets[index];
+                    document.getElementById(subTargetId).value = e.target.value;
+                }
+                
+                // データを保存
+                saveData();
+            });
+        });
+
+        // データのローカル保存
+        function saveData() {
+            const data = {};
+            document.querySelectorAll('textarea').forEach(textarea => {
+                data[textarea.id] = textarea.value;
+            });
+            localStorage.setItem('mandala_data', JSON.stringify(data));
+        }
+
+        // データの読み込み
+        function loadData() {
+            const saved = localStorage.getItem('mandala_data');
+            if (saved) {
+                const data = JSON.parse(saved);
+                for (const id in data) {
+                    const el = document.getElementById(id);
+                    if (el) el.value = data[id];
+                }
+            }
+        }
+
+        // すべてリセット
+        function clearAll() {
+            if (confirm('入力されたすべての内容を消去します。よろしいですか？')) {
+                document.querySelectorAll('textarea').forEach(textarea => {
+                    textarea.value = '';
+                });
+                localStorage.removeItem('mandala_data');
+            }
+        }
+
+        // 起動時にデータを読み込む
+        window.onload = loadData;
+    </script>
 </body>
 </html>
