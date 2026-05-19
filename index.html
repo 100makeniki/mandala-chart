@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+    <button onclick="saveData()">保存</button>
+    <button onclick="loadData()">読み込み</button>
+    <button onclick="window.print()">印刷</button>
+    <button onclick="clearData()">リセット</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="footer">
+    <a href="about.html">このサイトについて</a>
+    |
+    <a href="privacy.html">プライバシーポリシー</a>
+    |
+    <a href="contact.html">お問い合わせ</a>
+    |
+    <a href="blog.html">コラム</a>
+  </div>
+
+  <script>
+    const grid = document.getElementById('grid');
+
+    for (let i = 0; i < 81; i++) {
+      const textarea = document.createElement('textarea');
+      textarea.className = 'cell';
+
+      if (i === 40) {
+        textarea.classList.add('center');
+        textarea.placeholder = '中心目標';
+      }
+
+      textarea.value = localStorage.getItem('mandala-' + i) || '';
+
+      textarea.addEventListener('input', () => {
+        localStorage.setItem('mandala-' + i, textarea.value);
+      });
+
+      grid.appendChild(textarea);
+    }
+
+    function saveData() {
+      alert('保存しました');
+    }
+
+    function loadData() {
+      location.reload();
+    }
+
+    function clearData() {
+      if (!confirm('本当に削除しますか？')) return;
+
+      for (let i = 0; i < 81; i++) {
+        localStorage.removeItem('mandala-' + i);
+      }
+
+      location.reload();
+    }
+  </script>
+
+</body>
+</html>
